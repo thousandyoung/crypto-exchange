@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.howellyoung.exchange.assets.AssetService;
-import com.howellyoung.exchange.enums.DirectionEnum;
+import com.howellyoung.exchange.enums.OrderDirectionEnum;
 
 /**
  * 订单服务, active order means order that is not fully filled,
@@ -37,7 +37,7 @@ public class OrderService {
     /**
      * 创建订单，失败返回null:
      */
-    public OrderEntity createOrder(long sequenceId, long timeStamp, Long orderId, Long userId, DirectionEnum direction,
+    public OrderEntity createOrder(long sequenceId, long timeStamp, Long orderId, Long userId, OrderDirectionEnum direction,
             BigDecimal price, BigDecimal quantity) {
         switch (direction) {
         case BID -> {

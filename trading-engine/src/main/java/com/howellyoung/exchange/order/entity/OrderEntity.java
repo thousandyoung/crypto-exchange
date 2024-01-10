@@ -1,7 +1,7 @@
 package com.howellyoung.exchange.order.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.howellyoung.exchange.enums.DirectionEnum;
+import com.howellyoung.exchange.enums.OrderDirectionEnum;
 import com.howellyoung.exchange.enums.OrderStatusEnum;
 import com.howellyoung.exchange.entity.base.EntityPrecisionConfig;
 import jakarta.annotation.Nullable;
@@ -33,7 +33,7 @@ public class OrderEntity implements EntityPrecisionConfig, Comparable<OrderEntit
      * Order direction.
      */
     @Column(nullable = false, updatable = false, length = ENUM_LENGTH)
-    public DirectionEnum direction;
+    public OrderDirectionEnum direction;
 
     /**
      * User id of this order.
