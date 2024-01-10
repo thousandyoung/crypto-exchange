@@ -40,13 +40,13 @@ public class OrderService {
     public OrderEntity createOrder(long sequenceId, long timeStamp, Long orderId, Long userId, DirectionEnum direction,
             BigDecimal price, BigDecimal quantity) {
         switch (direction) {
-        case BUY -> {
+        case BID -> {
             // 买入，需冻结USD：
             if (!assetService.tryFreeze(userId, AssetEnum.USD, price.multiply(quantity))) {
                 return null;
             }
         }
-        case SELL -> {
+        case ASK -> {
             // 卖出，需冻结BTC：
             if (!assetService.tryFreeze(userId, AssetEnum.BTC, quantity)) {
                 return null;
