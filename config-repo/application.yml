@@ -1,0 +1,38 @@
+# global configurations:
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    consumer:
+      # set consumer group id (blank for auto):
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:}
+      auto-offset-reset: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET:latest}
+      max-poll-records: ${KAFKA_CONSUMER_MAX_POLL_RECORDS:500}
+      max-partition-fetch-bytes: ${KAFKA_MAX_PARTITION_FETCH_BYTES:1000000}
+
+  # redis configuration:
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
+
+  # datasource:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}/${DB_NAME:exchange}?useSSL=false&allowMultiQueries=true&useUnicode=true&characterEncoding=utf8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false
+      connection-timeout: ${DB_TIMEOUT:3000}
+      validation-timeout: ${DB_TIMEOUT:3000}
+      max-lifetime: 600000
+      maximum-pool-size: ${DB_POOL_MAX:500}
+      minimum-idle: ${DB_POOL_IDEL:1}
+
+logging:
+  level:
+    root: ${LOGGING_ROOT_LEVEL:INFO}
+    org.apache.kafka: ${LOGGING_KAFKA_LEVEL:WARN}
+    com.howellyoung.exchange: ${LOGGING_EXCHANGE_LEVEL:INFO}

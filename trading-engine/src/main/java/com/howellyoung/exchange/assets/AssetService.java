@@ -5,7 +5,9 @@ import com.howellyoung.exchange.util.AbstractLogger;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -109,6 +111,21 @@ public class AssetService extends AbstractLogger {
                 throw new IllegalArgumentException("invalid type: " + type);
             }
         };
+    }
+    public void debug() {
+        System.out.println("---------- assets ----------");
+        List<Long> userIds = new ArrayList<>(allUserAssetsMap.keySet());
+        Collections.sort(userIds);
+        for (Long userId : userIds) {
+            System.out.println("  user " + userId + " ----------");
+            Map<AssetEnum, Asset> assets = allUserAssetsMap.get(userId);
+            List<AssetEnum> assetIds = new ArrayList<>(assets.keySet());
+            Collections.sort(assetIds);
+            for (AssetEnum assetId : assetIds) {
+                System.out.println("    " + assetId + ": " + assets.get(assetId));
+            }
+        }
+        System.out.println("---------- // assets ----------");
     }
 
 
