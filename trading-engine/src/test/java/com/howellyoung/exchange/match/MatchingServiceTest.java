@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.assets.match;
+package com.howellyoung.exchange.match;
 
 import com.howellyoung.exchange.enums.OrderDirectionEnum;
 import com.howellyoung.exchange.enums.OrderStatusEnum;
@@ -29,7 +29,7 @@ public class MatchingServiceTest {
 
     @Test
     void processOrders() {
-        List<OrderEntity> orders = List.of( //
+        List<OrderEntity> orders = List.of(
                 createOrder(OrderDirectionEnum.BID, "12300.21", "1.02"), // 0
                 createOrder(OrderDirectionEnum.BID, "12305.39", "0.33"), // 1
                 createOrder(OrderDirectionEnum.ASK, "12305.39", "0.11"), // 2
@@ -41,8 +41,8 @@ public class MatchingServiceTest {
                 createOrder(OrderDirectionEnum.BID, "12300.00", "0.77")); // 8
         List<MatchingDetailRecord> matches = new ArrayList<>();
         for (OrderEntity order : orders) {
-            MatchingResult mr = this.matchingService.processOrder(order.sequenceId, order);
-            matches.addAll(mr.matchDetails);
+            MatchingResult mr = this.matchingService.processOrder(order);
+            matches.addAll(mr.matchingDetails);
         }
         assertArrayEquals(new MatchingDetailRecord[] { //
                 new MatchingDetailRecord(bd("12305.39"), bd("0.11"), orders.get(2), orders.get(1)), //

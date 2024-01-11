@@ -11,7 +11,7 @@ public class OrderBookBean {
     public static final String EMPTY = JsonUtil.convertObjectToJsonString(new OrderBookBean(0, BigDecimal.ZERO, List.of(), List.of()));
 
     @JsonIgnore
-    public long sequenceId;
+    public long sequenceId; // the state of orderBook
 
     public BigDecimal price;
 

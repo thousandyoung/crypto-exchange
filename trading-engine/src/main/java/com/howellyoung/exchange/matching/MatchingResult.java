@@ -7,26 +7,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-
+/*
+    MatchingResult is the matching result of a takerOrder, matching with makerOrderBook
+ */
 public class MatchingResult {
-
     public final OrderEntity takerOrder;
-    public final List<MatchingDetailRecord> matchDetails = new ArrayList<>();
+    public final List<MatchingDetailRecord> matchingDetails = new ArrayList<>();
 
     public MatchingResult(OrderEntity takerOrder) {
         this.takerOrder = takerOrder;
     }
 
     public void add(BigDecimal price, BigDecimal matchedQuantity, OrderEntity makerOrder) {
-        matchDetails.add(new MatchingDetailRecord(price, matchedQuantity, this.takerOrder, makerOrder));
+        matchingDetails.add(new MatchingDetailRecord(price, matchedQuantity, this.takerOrder, makerOrder));
     }
 
     @Override
     public String toString() {
-        if (matchDetails.isEmpty()) {
+        if (matchingDetails.isEmpty()) {
             return "no matched.";
         }
-        return matchDetails.size() + " matched: "
-                + String.join(", ", this.matchDetails.stream().map(MatchingDetailRecord::toString).toArray(String[]::new));
+        return matchingDetails.size() + " matched: "
+                + String.join(", ", this.matchingDetails.stream().map(MatchingDetailRecord::toString).toArray(String[]::new));
     }
 }

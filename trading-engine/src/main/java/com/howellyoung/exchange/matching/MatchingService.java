@@ -15,12 +15,12 @@ public class MatchingService {
     public final OrderBook bidBook = new OrderBook(OrderDirectionEnum.BID);
     public final OrderBook askBook = new OrderBook(OrderDirectionEnum.ASK);
     public BigDecimal marketPrice = BigDecimal.ZERO; // 最新市场价
-    private long sequenceId;
+    private long sequenceId; // MatchingService State, using the processing order's sequenceId
 
-    public MatchingResult processOrder(long sequenceId, OrderEntity order) {
+    public MatchingResult processOrder(OrderEntity order) {
         return switch (order.direction) {
-            case BID -> processOrder(sequenceId, order, this.askBook, this.bidBook);
-            case ASK -> processOrder(sequenceId, order, this.bidBook, this.askBook);
+            case BID -> processOrder(order, this.askBook, this.bidBook);
+            case ASK -> processOrder(order, this.bidBook, this.askBook);
             default -> throw new IllegalArgumentException("Invalid direction.");
         };
     }
@@ -31,14 +31,14 @@ public class MatchingService {
      * @param anotherBook 未能完全成交后挂单的OrderBook
      * @return 成交结果
      */
-    private MatchingResult processOrder(long sequenceId, OrderEntity takerOrder, OrderBook makerBook,
+    private MatchingResult processOrder(OrderEntity takerOrder, OrderBook makerBook,
                                         OrderBook anotherBook) {
-        this.sequenceId = sequenceId;
+        this.sequenceId = takerOrder.sequenceId;
         long timeStamp = takerOrder.createdAt;
         MatchingResult matchingResult = new MatchingResult(takerOrder);
         BigDecimal takerUnfilledQuantity = takerOrder.quantity;
         //处理takerOrder
-        for (;;) {
+        for (; ; ) {
             OrderEntity makerOrder = makerBook.getFirst();
             if (makerOrder == null) {
                 // 对手盘不存在:
