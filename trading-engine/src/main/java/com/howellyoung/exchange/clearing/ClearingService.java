@@ -1,21 +1,20 @@
-package com.itranswarp.exchange.clearing;
+package com.howellyoung.exchange.clearing;
 
 import java.math.BigDecimal;
 
+import com.howellyoung.exchange.assets.AssetService;
+import com.howellyoung.exchange.enums.AssetEnum;
+import com.howellyoung.exchange.matching.MatchingDetailRecord;
+import com.howellyoung.exchange.matching.MatchingResult;
+import com.howellyoung.exchange.order.entity.OrderEntity;
+import com.howellyoung.exchange.order.service.OrderService;
+import com.howellyoung.exchange.util.LoggerBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.itranswarp.exchange.assets.AssetService;
-import com.itranswarp.exchange.assets.Transfer;
-import com.itranswarp.exchange.enums.AssetEnum;
-import com.itranswarp.exchange.match.MatchDetailRecord;
-import com.itranswarp.exchange.match.MatchResult;
-import com.itranswarp.exchange.model.trade.OrderEntity;
-import com.itranswarp.exchange.order.OrderService;
-import com.itranswarp.exchange.support.LoggerSupport;
 
 @Component
-public class ClearingService extends LoggerSupport {
+public class ClearingService extends LoggerBase {
 
     final AssetService assetService;
 
@@ -26,81 +25,73 @@ public class ClearingService extends LoggerSupport {
         this.orderService = orderService;
     }
 
-    public void clearMatchResult(MatchResult result) {
+    public void clearMatchingResult(MatchingResult result) {
         OrderEntity taker = result.takerOrder;
         switch (taker.direction) {
-        case BUY -> {
-            // 买入时，按Maker的价格成交：
-            for (MatchDetailRecord detail : result.matchDetails) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "clear buy matched detail: price = {}, quantity = {}, takerOrderId = {}, makerOrderId = {}, takerUserId = {}, makerUserId = {}",
-                            detail.price(), detail.quantity(), detail.takerOrder().id, detail.makerOrder().id,
-                            detail.takerOrder().userId, detail.makerOrder().userId);
+            case BID -> {
+                // 买入时，按Maker的价格成交：
+                for (MatchingDetailRecord matchingDetail : result.matchingDetails) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(
+                                "clear buy matched detail: price = {}, quantity = {}, takerOrderId = {}, makerOrderId = {}, takerUserId = {}, makerUserId = {}",
+                                matchingDetail.price(), matchingDetail.quantity(), matchingDetail.takerOrder().id, matchingDetail.makerOrder().id,
+                                matchingDetail.takerOrder().userId, matchingDetail.makerOrder().userId);
+                    }
+                    OrderEntity maker = matchingDetail.makerOrder();
+                    BigDecimal matchedQuantity = matchingDetail.quantity();
+                    BigDecimal matchedTradeValue = maker.price.multiply(matchedQuantity);
+                    if (taker.price.compareTo(maker.price) > 0) {
+                        // 成交价<Bid Price，被freeze的差价USD退回available:
+                        BigDecimal unfreezeFunds = taker.price.multiply(matchedQuantity).subtract(matchedTradeValue);
+                        logger.debug("unfree extra unused quote {} back to taker user {}", unfreezeFunds, taker.userId);
+                        assetService.unfreeze(taker.userId, AssetEnum.USD, unfreezeFunds);
+                    }
+                    // 买方USD转入卖方账户:
+                    assetService.transferFrozenToAvailable(taker.userId, maker.userId, AssetEnum.USD, matchedTradeValue, true);
+                    // 卖方BTC转入买方账户:
+                    assetService.transferFrozenToAvailable(maker.userId, taker.userId, AssetEnum.BTC, matchedQuantity, true);
+                    // 删除完全成交的Maker:
+                    orderService.processCompletedOrder(maker);
                 }
-                OrderEntity maker = detail.makerOrder();
-                BigDecimal matched = detail.quantity();
-                if (taker.price.compareTo(maker.price) > 0) {
-                    // 实际买入价比报价低，部分USD退回账户:
-                    BigDecimal unfreezeQuote = taker.price.subtract(maker.price).multiply(matched);
-                    logger.debug("unfree extra unused quote {} back to taker user {}", unfreezeQuote, taker.userId);
-                    assetService.unfreeze(taker.userId, AssetEnum.USD, unfreezeQuote);
-                }
-                // 买方USD转入卖方账户:
-                assetService.transfer(Transfer.FROZEN_TO_AVAILABLE, taker.userId, maker.userId, AssetEnum.USD,
-                        maker.price.multiply(matched));
-                // 卖方BTC转入买方账户:
-                assetService.transfer(Transfer.FROZEN_TO_AVAILABLE, maker.userId, taker.userId, AssetEnum.BTC, matched);
-                // 删除完全成交的Maker:
-                if (maker.unfilledQuantity.signum() == 0) {
-                    orderService.removeOrder(maker.id);
-                }
+                // 删除完全成交的Taker:
+                orderService.processCompletedOrder(taker);
             }
-            // 删除完全成交的Taker:
-            if (taker.unfilledQuantity.signum() == 0) {
-                orderService.removeOrder(taker.id);
-            }
-        }
-        case SELL -> {
-            for (MatchDetailRecord detail : result.matchDetails) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "clear sell matched detail: price = {}, quantity = {}, takerOrderId = {}, makerOrderId = {}, takerUserId = {}, makerUserId = {}",
-                            detail.price(), detail.quantity(), detail.takerOrder().id, detail.makerOrder().id,
-                            detail.takerOrder().userId, detail.makerOrder().userId);
+            case ASK -> {
+                for (MatchingDetailRecord matchingDetail : result.matchingDetails) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(
+                                "clear sell matched detail: price = {}, quantity = {}, takerOrderId = {}, makerOrderId = {}, takerUserId = {}, makerUserId = {}",
+                                matchingDetail.price(), matchingDetail.quantity(), matchingDetail.takerOrder().id, matchingDetail.makerOrder().id,
+                                matchingDetail.takerOrder().userId, matchingDetail.makerOrder().userId);
+                    }
+                    OrderEntity maker = matchingDetail.makerOrder();
+                    BigDecimal matchedQuantity = matchingDetail.quantity();
+                    BigDecimal matchedTradeValue = maker.price.multiply(matchedQuantity);
+                    // 卖方BTC转入买方账户:
+                    assetService.transferFrozenToAvailable(taker.userId, maker.userId, AssetEnum.BTC, matchedQuantity, true);
+                    // 买方USD转入卖方账户:
+                    assetService.transferFrozenToAvailable(maker.userId, taker.userId, AssetEnum.USD, matchedTradeValue, true);
+                    // 删除完全成交的Maker:
+                    orderService.processCompletedOrder(maker);
                 }
-                OrderEntity maker = detail.makerOrder();
-                BigDecimal matched = detail.quantity();
-                // 卖方BTC转入买方账户:
-                assetService.transfer(Transfer.FROZEN_TO_AVAILABLE, taker.userId, maker.userId, AssetEnum.BTC, matched);
-                // 买方USD转入卖方账户:
-                assetService.transfer(Transfer.FROZEN_TO_AVAILABLE, maker.userId, taker.userId, AssetEnum.USD,
-                        maker.price.multiply(matched));
-                // 删除完全成交的Maker:
-                if (maker.unfilledQuantity.signum() == 0) {
-                    orderService.removeOrder(maker.id);
-                }
+                // 删除完全成交的Taker:
+                orderService.processCompletedOrder(taker);
             }
-            // 删除完全成交的Taker:
-            if (taker.unfilledQuantity.signum() == 0) {
-                orderService.removeOrder(taker.id);
-            }
-        }
-        default -> throw new IllegalArgumentException("Invalid direction.");
+            default -> throw new IllegalArgumentException("Invalid direction.");
         }
     }
 
     public void clearCancelOrder(OrderEntity order) {
         switch (order.direction) {
-        case BUY -> {
-            // 解冻USD = 价格 x 未成交数量
-            assetService.unfreeze(order.userId, AssetEnum.USD, order.price.multiply(order.unfilledQuantity));
-        }
-        case SELL -> {
-            // 解冻BTC = 未成交数量
-            assetService.unfreeze(order.userId, AssetEnum.BTC, order.unfilledQuantity);
-        }
-        default -> throw new IllegalArgumentException("Invalid direction.");
+            case BID -> {
+                // 解冻USD = 价格 x 未成交数量
+                assetService.unfreeze(order.userId, AssetEnum.USD, order.price.multiply(order.unfilledQuantity));
+            }
+            case ASK -> {
+                // 解冻BTC = 未成交数量
+                assetService.unfreeze(order.userId, AssetEnum.BTC, order.unfilledQuantity);
+            }
+            default -> throw new IllegalArgumentException("Invalid direction.");
         }
         // 从OrderService中删除订单:
         orderService.removeOrder(order.id);

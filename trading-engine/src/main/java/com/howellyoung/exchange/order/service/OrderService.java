@@ -104,6 +104,11 @@ public class OrderService {
         }
     }
 
+    public void processCompletedOrder(OrderEntity order) {
+        if (order.unfilledQuantity.signum() == 0) {
+            removeOrder(order.id);
+        }
+    }
     public void debug() {
         System.out.println("---------- orders ----------");
         List<OrderEntity> orders = new ArrayList<>(this.allActiveOrdersMap.values());

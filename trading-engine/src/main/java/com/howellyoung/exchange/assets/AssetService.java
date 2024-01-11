@@ -1,7 +1,7 @@
 package com.howellyoung.exchange.assets;
 
 import com.howellyoung.exchange.enums.AssetEnum;
-import com.howellyoung.exchange.util.AbstractLogger;
+import com.howellyoung.exchange.util.LoggerBase;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @Component
-public class AssetService extends AbstractLogger {
+public class AssetService extends LoggerBase {
     private enum Transfer {
         AVAILABLE_TO_FROZEN,
         FROZEN_TO_AVAILABLE;
