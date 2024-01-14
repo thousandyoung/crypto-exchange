@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.util.JsonUtil;
 import jakarta.annotation.PostConstruct;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -19,9 +21,6 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.TypeFilter;
 import org.springframework.stereotype.Component;
 
-import com.itranswarp.exchange.message.AbstractMessage;
-import com.itranswarp.exchange.util.JsonUtil;
-
 /**
  * Holds all message types.
  */
@@ -30,12 +29,12 @@ public class MessageTypes {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
-    final String messagePackage = AbstractMessage.class.getPackageName();
+    final String messagePackage = BaseMessage.class.getPackageName();
 
     // key: type value: message
-    final Map<String, Class<? extends AbstractMessage>> messageTypes = new HashMap<>();
+    final Map<String, Class<? extends BaseMessage>> messageTypes = new HashMap<>();
 
-    //主要目的是在应用启动时扫描并收集所有消息类型（继承自 AbstractMessage 类），并将它们存储在 messageTypes 这个 Map 中，供后续使用
+    //在应用启动时扫描并收集所有消息类型（继承自 AbstractMessage 类），并将它们存储在 messageTypes 这个 Map 中，供后续使用
     @SuppressWarnings("unchecked")
     @PostConstruct
     public void init() {
@@ -52,7 +51,7 @@ public class MessageTypes {
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                return AbstractMessage.class.isAssignableFrom(clazz);
+                return BaseMessage.class.isAssignableFrom(clazz);
             }
         });
         Set<BeanDefinition> beans = provider.findCandidateComponents(messagePackage);
@@ -60,7 +59,7 @@ public class MessageTypes {
             try {
                 Class<?> clazz = Class.forName(bean.getBeanClassName());
                 logger.info("found message class: {}", clazz.getName());
-                if (this.messageTypes.put(clazz.getName(), (Class<? extends AbstractMessage>) clazz) != null) {
+                if (this.messageTypes.put(clazz.getName(), (Class<? extends BaseMessage>) clazz) != null) {
                     throw new RuntimeException("Duplicate message class name: " + clazz.getName());
                 }
             } catch (ClassNotFoundException e) {
@@ -69,35 +68,27 @@ public class MessageTypes {
         }
     }
 
-    public String serialize(AbstractMessage message) {
+    public String serialize(BaseMessage message) {
         String type = message.getClass().getName();
-        String json = JsonUtil.writeJson(message);
+        String json = JsonUtil.convertObjectToJsonString(message);
         return type + SEP + json;
     }
 
-    public List<AbstractMessage> deserialize(List<String> dataList) {
-        List<AbstractMessage> list = new ArrayList<>(dataList.size());
+    public List<BaseMessage> deserialize(List<String> dataList) {
+        List<BaseMessage> list = new ArrayList<>(dataList.size());
         for (String data : dataList) {
             list.add(deserialize(data));
         }
         return list;
     }
 
-    public List<AbstractMessage> deserializeConsumerRecords(List<ConsumerRecord<String, String>> dataList) {
-        List<AbstractMessage> list = new ArrayList<>(dataList.size());
-        for (ConsumerRecord<String, String> data : dataList) {
-            list.add(deserialize(data.value()));
-        }
-        return list;
-    }
-
-    public AbstractMessage deserialize(String data) {
+    public BaseMessage deserialize(String data) {
         int pos = data.indexOf(SEP);
         if (pos == -1) {
             throw new RuntimeException("Unable to handle message with data: " + data);
         }
         String type = data.substring(0, pos);
-        Class<? extends AbstractMessage> clazz = messageTypes.get(type);
+        Class<? extends BaseMessage> clazz = messageTypes.get(type);
         if (clazz == null) {
             throw new RuntimeException("Unable to handle message with type: " + type);
         }

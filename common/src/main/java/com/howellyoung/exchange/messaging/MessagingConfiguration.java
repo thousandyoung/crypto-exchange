@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 import java.util.HashMap;
 import java.util.Map;

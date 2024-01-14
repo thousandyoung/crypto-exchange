@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.config;
+package com.howellyoung.exchange.config;
 
 import java.time.Duration;
 import java.time.ZoneId;
@@ -8,15 +8,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "exchange.config")
+@ConfigurationProperties(prefix = "exchange.config") //only set default value of config in config class
 public class ExchangeConfiguration {
 
     private int orderBookDepth = 50;
     private boolean debugMode = false;
-    private String timeZone = ZoneId.systemDefault().getId();
-    private String hmacKey;
-    private Duration sessionTimeout;
-    private ApiEndpoints apiEndpoints;
+    private String timeZone = ZoneId.systemDefault().getId(); //默认设置
 
     @Bean
     public ZoneId createZoneId() {
@@ -47,48 +44,4 @@ public class ExchangeConfiguration {
         this.timeZone = timeZone.isEmpty() ? ZoneId.systemDefault().getId() : timeZone;
     }
 
-    public String getHmacKey() {
-        return hmacKey;
-    }
-
-    public void setHmacKey(String hmacKey) {
-        this.hmacKey = hmacKey;
-    }
-
-    public Duration getSessionTimeout() {
-        return sessionTimeout;
-    }
-
-    public void setSessionTimeout(Duration sessionTimeout) {
-        this.sessionTimeout = sessionTimeout;
-    }
-
-    public ApiEndpoints getApiEndpoints() {
-        return apiEndpoints;
-    }
-
-    public void setApiEndpoints(ApiEndpoints apiEndpoints) {
-        this.apiEndpoints = apiEndpoints;
-    }
-
-    public static class ApiEndpoints {
-        private String tradingApi;
-        private String tradingEngineApi;
-
-        public String getTradingApi() {
-            return tradingApi;
-        }
-
-        public void setTradingApi(String tradingApi) {
-            this.tradingApi = tradingApi;
-        }
-
-        public String getTradingEngineApi() {
-            return tradingEngineApi;
-        }
-
-        public void setTradingEngineApi(String tradingEngineApi) {
-            this.tradingEngineApi = tradingEngineApi;
-        }
-    }
 }

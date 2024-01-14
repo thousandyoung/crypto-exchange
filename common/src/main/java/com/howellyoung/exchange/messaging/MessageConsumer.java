@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 @FunctionalInterface
 public interface MessageConsumer {

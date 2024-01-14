@@ -1,11 +1,11 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 import java.util.List;
 
-import com.itranswarp.exchange.message.AbstractMessage;
+import com.howellyoung.exchange.message.BaseMessage;
 
 @FunctionalInterface
-public interface MessageProducer<T extends AbstractMessage> {
+public interface MessageProducer<T extends BaseMessage> {
 
     void sendMessage(T message);
 

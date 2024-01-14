@@ -1,11 +1,12 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
+
+import com.howellyoung.exchange.message.BaseMessage;
 
 import java.util.List;
 
-import com.itranswarp.exchange.message.AbstractMessage;
 
 @FunctionalInterface
-public interface BatchMessageHandler<T extends AbstractMessage> {
+public interface BatchMessageHandler<T extends BaseMessage> {
 
     void processMessages(List<T> messages);
 

@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
+
+import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.util.LoggerBase;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -22,8 +25,6 @@ import org.springframework.kafka.support.TopicPartitionOffset;
 import org.springframework.kafka.support.converter.MessageConverter;
 import org.springframework.stereotype.Component;
 
-import com.itranswarp.exchange.message.AbstractMessage;
-import com.itranswarp.exchange.support.LoggerSupport;
 
 import jakarta.annotation.PostConstruct;
 
@@ -31,7 +32,7 @@ import jakarta.annotation.PostConstruct;
  * 接收和发送消息的入口
  */
 @Component
-public class MessagingFactory extends LoggerSupport {
+public class MessagingFactory extends LoggerBase {
 
     @Autowired
     private MessageTypes messageTypes;
@@ -68,24 +69,24 @@ public class MessagingFactory extends LoggerSupport {
         logger.info("init MessagingFactory ok.");
     }
 
-    public <T extends AbstractMessage> MessageProducer<T> createMessageProducer(Messaging.Topic topic,
-            Class<T> messageClass) {
+    public <T extends BaseMessage> MessageProducer<T> createMessageProducer(Messaging.Topic topic,
+                                                                            Class<T> messageClass) {
         logger.info("try create message producer for topic {}...", topic);
         final String name = topic.name();
         return new MessageProducer<>() {
             @Override
-            public void sendMessage(AbstractMessage message) {
+            public void sendMessage(BaseMessage message) {
                 kafkaTemplate.send(name, messageTypes.serialize(message));
             }
         };
     }
 
-    public <T extends AbstractMessage> MessageConsumer createBatchMessageListener(Messaging.Topic topic, String groupId,
+    public <T extends BaseMessage> MessageConsumer createBatchMessageListener(Messaging.Topic topic, String groupId,
             BatchMessageHandler<T> messageHandler) {
         return createBatchMessageListener(topic, groupId, messageHandler, null);
     }
 
-    public <T extends AbstractMessage> MessageConsumer createBatchMessageListener(Messaging.Topic topic, String groupId,
+    public <T extends BaseMessage> MessageConsumer createBatchMessageListener(Messaging.Topic topic, String groupId,
             BatchMessageHandler<T> messageHandler, CommonErrorHandler errorHandler) {
         logger.info("try create batch message listener for topic {}: group id = {}...", topic, groupId);
         ConcurrentMessageListenerContainer<String, String> listenerContainer = listenerContainerFactory
@@ -106,7 +107,7 @@ public class MessagingFactory extends LoggerSupport {
             public void onMessage(List<ConsumerRecord<String, String>> data) {
                 List<T> messages = new ArrayList<>(data.size());
                 for (ConsumerRecord<String, String> record : data) {
-                    AbstractMessage message = messageTypes.deserialize(record.value());
+                    BaseMessage message = messageTypes.deserialize(record.value());
                     messages.add((T) message);
                 }
                 messageHandler.processMessages(messages);

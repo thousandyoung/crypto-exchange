@@ -1,4 +1,9 @@
 # global configurations:
+exchange:
+  config:
+    order-book-depth: ${ORDER_BOOK_DEPTH:50}
+    debug-mode: ${EXCHANGE_DEBUG_MODE:false}
+    time-zone: ${EXCHANGE_TIME_ZONE:}
 
 spring:
   kafka:

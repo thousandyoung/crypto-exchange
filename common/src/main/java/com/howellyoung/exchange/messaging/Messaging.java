@@ -1,4 +1,4 @@
-package com.itranswarp.exchange.messaging;
+package com.howellyoung.exchange.messaging;
 
 public interface Messaging {
 
@@ -24,18 +24,14 @@ public interface Messaging {
          */
         TICK(1);
 
-        private final int concurrency;
+        private final int partitions;
 
-        Topic(int concurrency) {
-            this.concurrency = concurrency;
-        }
-
-        public int getConcurrency() {
-            return this.concurrency;
+        Topic(int partitions) {
+            this.partitions = partitions;
         }
 
         public int getPartitions() {
-            return this.concurrency;
+            return this.partitions;
         }
     }
 }
