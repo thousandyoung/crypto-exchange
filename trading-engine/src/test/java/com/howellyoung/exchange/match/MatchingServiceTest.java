@@ -5,7 +5,7 @@ import com.howellyoung.exchange.enums.OrderStatusEnum;
 import com.howellyoung.exchange.matching.MatchingDetailRecord;
 import com.howellyoung.exchange.matching.MatchingResult;
 import com.howellyoung.exchange.matching.MatchingService;
-import com.howellyoung.exchange.order.entity.OrderEntity;
+import com.howellyoung.exchange.entity.OrderEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

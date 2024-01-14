@@ -1,6 +1,6 @@
 package com.howellyoung.exchange.matching;
 
-import com.howellyoung.exchange.order.entity.OrderEntity;
+import com.howellyoung.exchange.entity.OrderEntity;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.order.service;
+package com.howellyoung.exchange.order;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 
 
 import com.howellyoung.exchange.enums.AssetEnum;
-import com.howellyoung.exchange.order.entity.OrderEntity;
+import com.howellyoung.exchange.entity.OrderEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
