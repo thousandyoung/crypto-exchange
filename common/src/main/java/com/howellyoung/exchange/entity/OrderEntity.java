@@ -3,7 +3,7 @@ package com.howellyoung.exchange.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.howellyoung.exchange.enums.OrderDirectionEnum;
 import com.howellyoung.exchange.enums.OrderStatusEnum;
-import com.howellyoung.exchange.entity.base.EntityPrecisionConfig;
+import com.howellyoung.exchange.entity.base.BaseEntity;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "orders")
-public class OrderEntity implements EntityPrecisionConfig, Comparable<OrderEntity> {
+public class OrderEntity implements BaseEntity, Comparable<OrderEntity> {
 
     /**
      * Primary key: assigned order id.

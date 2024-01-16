@@ -35,7 +35,10 @@ spring:
       max-lifetime: 600000
       maximum-pool-size: ${DB_POOL_MAX:500}
       minimum-idle: ${DB_POOL_IDEL:1}
-
+    jpa:
+      hibernate:
+        ddl-auto: update
+      show-sql: true
 logging:
   level:
     root: ${LOGGING_ROOT_LEVEL:INFO}

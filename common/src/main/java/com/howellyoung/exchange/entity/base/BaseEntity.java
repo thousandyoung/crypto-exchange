@@ -1,6 +1,6 @@
 package com.howellyoung.exchange.entity.base;
 
-public interface EntityPrecisionConfig {
+public interface BaseEntity {
     /**
      * Default big decimal storage type: DECIMAL(PRECISION, SCALE)
      *
