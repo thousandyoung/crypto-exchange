@@ -8,7 +8,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 
-
 /**
  * Event readonly entity.
  */
@@ -21,26 +20,22 @@ public class EventEntity implements BaseEntity {
      */
     @Id
     @Column(nullable = false, updatable = false)
-    public long sequenceId;
+    public Long sequenceId;
 
     /**
      * Keep previous id. The previous id of first event is 0.
-     * // previousId is used to ensure the order of event processing.
-     * // It should be the sequenceId of the previous event.
-     * // If the previousId is greater than the last processed sequenceId, it means some events are lost and we need to load them from the database.
-     * // If the previousId is not equal to the last processed sequenceId, it means the order of events is incorrect, and we need to stop processing.
      */
     @Column(nullable = false, updatable = false)
-    public long previousId;
+    public Long previousId;
 
     /**
      * JSON-encoded event data.
      */
-    @Column(nullable = false, updatable = false, length = CHAR_LENGTH_1000)
+    @Column(nullable = false, updatable = false, length = CHAR_LENGTH_10000)
     public String data;
 
     @Column(nullable = false, updatable = false)
-    public long createdAt;
+    public Long createdAt;
 
     @Override
     public String toString() {

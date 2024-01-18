@@ -14,6 +14,7 @@
         <module>trading-engine</module>
         <module>build</module>
         <module>cloud</module>
+        <module>trading-sequencer</module>
     </modules>
 
     <parent>
