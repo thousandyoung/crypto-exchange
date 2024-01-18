@@ -1,5 +1,7 @@
 package com.howellyoung.exchange.assets;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.math.BigDecimal;
 
 public class Asset {
@@ -17,6 +19,10 @@ public class Asset {
     }
     public BigDecimal getFrozen() {
         return frozen;
+    }
+    @JsonIgnore
+    public BigDecimal getTotal() {
+        return available.add(frozen);
     }
     @Override
     public String toString() {

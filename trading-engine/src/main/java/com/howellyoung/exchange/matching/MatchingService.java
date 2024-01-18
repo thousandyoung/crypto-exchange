@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import com.howellyoung.exchange.bean.OrderBookBean;
 import com.howellyoung.exchange.enums.OrderDirectionEnum;
 import com.howellyoung.exchange.enums.OrderStatusEnum;
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 import org.springframework.stereotype.Component;
 
 

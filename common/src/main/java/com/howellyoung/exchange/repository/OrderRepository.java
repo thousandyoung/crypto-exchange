@@ -1,7 +1,7 @@
 package com.howellyoung.exchange.repository;
 
 
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.data.jpa.repository.JpaRepository;

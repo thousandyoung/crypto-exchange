@@ -1,103 +1,74 @@
-package com.itranswarp.exchange;
+package com.howellyoung.exchange.service;
+
+import com.howellyoung.exchange.assets.Asset;
+import com.howellyoung.exchange.assets.AssetService;
+import com.howellyoung.exchange.bean.OrderBookBean;
+import com.howellyoung.exchange.clearing.ClearingService;
+import com.howellyoung.exchange.entity.TickEntity;
+import com.howellyoung.exchange.entity.trade.MatchingDetailEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
+import com.howellyoung.exchange.enums.AssetEnum;
+import com.howellyoung.exchange.enums.MatchTypeEnum;
+import com.howellyoung.exchange.enums.OrderDirectionEnum;
+import com.howellyoung.exchange.enums.UserTypeEnum;
+import com.howellyoung.exchange.matching.MatchingDetailRecord;
+import com.howellyoung.exchange.matching.MatchingResult;
+import com.howellyoung.exchange.matching.MatchingService;
+import com.howellyoung.exchange.message.ApiResultMessage;
+import com.howellyoung.exchange.message.NotificationMessage;
+import com.howellyoung.exchange.message.TickMessage;
+import com.howellyoung.exchange.message.event.BaseEvent;
+import com.howellyoung.exchange.message.event.OrderCancelEvent;
+import com.howellyoung.exchange.message.event.OrderRequestEvent;
+import com.howellyoung.exchange.message.event.TransferEvent;
+import com.howellyoung.exchange.messaging.MessageProducer;
+import com.howellyoung.exchange.messaging.MessageConsumer;
+import com.howellyoung.exchange.messaging.Messaging;
+import com.howellyoung.exchange.messaging.MessagingFactory;
+import com.howellyoung.exchange.order.OrderService;
+import com.howellyoung.exchange.redis.RedisCache;
+import com.howellyoung.exchange.redis.RedisService;
+import com.howellyoung.exchange.store.StoreService;
+import com.howellyoung.exchange.util.IpUtil;
+import com.howellyoung.exchange.util.JsonUtil;
+import com.howellyoung.exchange.util.LoggerBase;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import com.itranswarp.exchange.assets.AssetService;
-import com.itranswarp.exchange.assets.Asset;
-import com.itranswarp.exchange.assets.Transfer
-;
-import com.itranswarp.exchange.bean.OrderBookBean;
-import com.itranswarp.exchange.clearing.ClearingService;
-import com.itranswarp.exchange.enums.AssetEnum;
-import com.itranswarp.exchange.enums.Direction;
-import com.itranswarp.exchange.enums.MatchType;
-import com.itranswarp.exchange.enums.UserType;
-import com.itranswarp.exchange.match.MatchDetailRecord;
-import com.itranswarp.exchange.match.MatchEngine;
-import com.itranswarp.exchange.match.MatchResult;
-import com.itranswarp.exchange.message.ApiResultMessage;
-import com.itranswarp.exchange.message.NotificationMessage;
-import com.itranswarp.exchange.message.TickMessage;
-import com.itranswarp.exchange.message.event.AbstractEvent;
-import com.itranswarp.exchange.message.event.OrderCancelEvent;
-import com.itranswarp.exchange.message.event.OrderRequestEvent;
-import com.itranswarp.exchange.message.event.TransferEvent;
-import com.itranswarp.exchange.messaging.MessageConsumer;
-import com.itranswarp.exchange.messaging.MessageProducer;
-import com.itranswarp.exchange.messaging.Messaging;
-import com.itranswarp.exchange.messaging.Messaging.Topic;
-import com.itranswarp.exchange.messaging.MessagingFactory;
-import com.itranswarp.exchange.model.quotation.TickEntity;
-import com.itranswarp.exchange.model.trade.MatchDetailEntity;
-import com.itranswarp.exchange.model.trade.OrderEntity;
-import com.itranswarp.exchange.order.OrderService;
-import com.itranswarp.exchange.redis.RedisCache;
-import com.itranswarp.exchange.redis.RedisService;
-import com.itranswarp.exchange.store.StoreService;
-import com.itranswarp.exchange.support.LoggerSupport;
-import com.itranswarp.exchange.util.IpUtil;
-import com.itranswarp.exchange.util.JsonUtil;
 
 @Component
-public class TradingEngineService extends LoggerSupport {
-
-    @Autowired(required = false)
-    ZoneId zoneId = ZoneId.systemDefault();
-
-    @Value("#{exchangeConfiguration.orderBookDepth}")
-    int orderBookDepth = 100;
-
-    @Value("#{exchangeConfiguration.debugMode}")
-    boolean debugMode = false;
-
-    boolean fatalError = false;
-
-    @Autowired
-    AssetService assetService;
-
-    @Autowired
-    OrderService orderService;
-
-    @Autowired
-    MatchEngine matchEngine;
-
-    @Autowired
-    ClearingService clearingService;
-
-    @Autowired
-    MessagingFactory messagingFactory;
-
-    @Autowired
-    StoreService storeService;
-
-    @Autowired
-    RedisService redisService;
-
+public class TradingEngineService extends LoggerBase {
+    // injection values
+    private ZoneId zoneId;
+    private int orderBookDepth;
+    private boolean debugMode;
+    private final AssetService assetService;
+    private final OrderService orderService;
+    public final MatchingService matchingService;
+    private final ClearingService clearingService;
+    private final MessagingFactory messagingFactory;
+    private final StoreService storeService;
+    private final RedisService redisService;
+    // error mark
+    private boolean fatalError = false;
+    //kafka
     private MessageConsumer consumer;
-
     private MessageProducer<TickMessage> producer;
-
-    private long lastSequenceId = 0;
-
-    private boolean orderBookChanged = false;
-
+    private long lastEventSequenceId = 0;
+    //maintain latest orderBook
+    private boolean isOrderBookUpdated = false;
+    //redis script
     private String shaUpdateOrderBookLua;
 
     private Thread tickThread;
@@ -106,19 +77,45 @@ public class TradingEngineService extends LoggerSupport {
     private Thread orderBookThread;
     private Thread dbThread;
 
+    // persistence
     private OrderBookBean latestOrderBook = null;
     private Queue<List<OrderEntity>> orderQueue = new ConcurrentLinkedQueue<>();
-    private Queue<List<MatchDetailEntity>> matchQueue = new ConcurrentLinkedQueue<>();
+    private Queue<List<MatchingDetailEntity>> matchQueue = new ConcurrentLinkedQueue<>();
+    // kafka messaging, export tick msg
     private Queue<TickMessage> tickQueue = new ConcurrentLinkedQueue<>();
+    // redis messaging, export notification, api result
     private Queue<ApiResultMessage> apiResultQueue = new ConcurrentLinkedQueue<>();
     private Queue<NotificationMessage> notificationQueue = new ConcurrentLinkedQueue<>();
 
+    public TradingEngineService(
+            ZoneId zoneId,
+            @Value("#{exchangeConfiguration.orderBookDepth ?: 100}") int orderBookDepth,
+            @Value("#{exchangeConfiguration.debugMode ?: false}") boolean debugMode,
+            AssetService assetService,
+            OrderService orderService,
+            MatchingService matchingService,
+            ClearingService clearingService,
+            MessagingFactory messagingFactory,
+            StoreService storeService,
+            RedisService redisService
+    ) {
+        this.zoneId = zoneId == null ? ZoneId.systemDefault() : zoneId;
+        this.orderBookDepth = orderBookDepth;
+        this.debugMode = debugMode;
+        this.assetService = assetService;
+        this.orderService = orderService;
+        this.matchingService = matchingService;
+        this.clearingService = clearingService;
+        this.messagingFactory = messagingFactory;
+        this.storeService = storeService;
+        this.redisService = redisService;
+    }
     @PostConstruct
     public void init() {
         this.shaUpdateOrderBookLua = this.redisService.loadScriptFromClassPath("/redis/update-orderbook.lua");
         this.consumer = this.messagingFactory.createBatchMessageListener(Messaging.Topic.TRADE, IpUtil.getHostId(),
                 this::processMessages);
-        this.producer = this.messagingFactory.createMessageProducer(Topic.TICK, TickMessage.class);
+        this.producer = this.messagingFactory.createMessageProducer(Messaging.Topic.TICK, TickMessage.class);
         this.tickThread = new Thread(this::runTickThread, "async-tick");
         this.tickThread.start();
         this.notifyThread = new Thread(this::runNotifyThread, "async-notify");
@@ -140,9 +137,9 @@ public class TradingEngineService extends LoggerSupport {
 
     private void runTickThread() {
         logger.info("start tick thread...");
-        for (;;) {
+        for (; ; ) {
             List<TickMessage> msgs = new ArrayList<>();
-            for (;;) {
+            for (; ; ) {
                 TickMessage msg = tickQueue.poll();
                 if (msg != null) {
                     msgs.add(msg);
@@ -157,7 +154,7 @@ public class TradingEngineService extends LoggerSupport {
                 if (logger.isDebugEnabled()) {
                     logger.debug("send {} tick messages...", msgs.size());
                 }
-                this.producer.sendMessages(msgs);
+                this.producer.sendMessages(msgs);//kafka
             } else {
                 // 无TickMessage时，暂停1ms:
                 try {
@@ -172,10 +169,10 @@ public class TradingEngineService extends LoggerSupport {
 
     private void runNotifyThread() {
         logger.info("start publish notify to redis...");
-        for (;;) {
+        for (; ; ) {
             NotificationMessage msg = this.notificationQueue.poll();
             if (msg != null) {
-                redisService.publish(RedisCache.Topic.NOTIFICATION, JsonUtil.writeJson(msg));
+                redisService.publish(RedisCache.Topic.NOTIFICATION, JsonUtil.convertObjectToJsonString(msg));
             } else {
                 // 无推送时，暂停1ms:
                 try {
@@ -190,10 +187,10 @@ public class TradingEngineService extends LoggerSupport {
 
     private void runApiResultThread() {
         logger.info("start publish api result to redis...");
-        for (;;) {
+        for (; ; ) {
             ApiResultMessage result = this.apiResultQueue.poll();
             if (result != null) {
-                redisService.publish(RedisCache.Topic.TRADING_API_RESULT, JsonUtil.writeJson(result));
+                redisService.publish(RedisCache.Topic.TRADING_API_RESULT, JsonUtil.convertObjectToJsonString(result));
             } else {
                 // 无推送时，暂停1ms:
                 try {
@@ -209,7 +206,7 @@ public class TradingEngineService extends LoggerSupport {
     private void runOrderBookThread() {
         logger.info("start update orderbook snapshot to redis...");
         long lastSequenceId = 0;
-        for (;;) {
+        for (; ; ) {
             // 获取OrderBookBean的引用，确保后续操作针对局部变量而非成员变量:
             final OrderBookBean orderBook = this.latestOrderBook;
             // 仅在OrderBookBean更新后刷新Redis:
@@ -219,9 +216,9 @@ public class TradingEngineService extends LoggerSupport {
                 }
                 redisService.executeScriptReturnBoolean(this.shaUpdateOrderBookLua,
                         // keys: [cache-key]
-                        new String[] { RedisCache.Key.ORDER_BOOK },
+                        new String[]{RedisCache.Key.ORDER_BOOK},
                         // args: [sequenceId, json-data]
-                        new String[] { String.valueOf(orderBook.sequenceId), JsonUtil.writeJson(orderBook) });
+                        new String[]{String.valueOf(orderBook.sequenceId), JsonUtil.convertObjectToJsonString(orderBook)});
                 lastSequenceId = orderBook.sequenceId;
             } else {
                 // 无更新时，暂停1ms:
@@ -237,7 +234,7 @@ public class TradingEngineService extends LoggerSupport {
 
     private void runDbThread() {
         logger.info("start batch insert to db...");
-        for (;;) {
+        for (; ; ) {
             try {
                 saveToDb();
             } catch (InterruptedException e) {
@@ -247,12 +244,12 @@ public class TradingEngineService extends LoggerSupport {
         }
     }
 
-    // called by dbExecutor thread only:
+    // for recovering, called by dbExecutor thread only:
     private void saveToDb() throws InterruptedException {
         if (!matchQueue.isEmpty()) {
-            List<MatchDetailEntity> batch = new ArrayList<>(1000);
-            for (;;) {
-                List<MatchDetailEntity> matches = matchQueue.poll();
+            List<MatchingDetailEntity> batch = new ArrayList<>(1000);
+            for (; ; ) {
+                List<MatchingDetailEntity> matches = matchQueue.poll();
                 if (matches != null) {
                     batch.addAll(matches);
                     if (batch.size() >= 1000) {
@@ -262,7 +259,7 @@ public class TradingEngineService extends LoggerSupport {
                     break;
                 }
             }
-            batch.sort(MatchDetailEntity::compareTo);
+            batch.sort(MatchingDetailEntity::compareTo);
             if (logger.isDebugEnabled()) {
                 logger.debug("batch insert {} match details...", batch.size());
             }
@@ -270,7 +267,7 @@ public class TradingEngineService extends LoggerSupport {
         }
         if (!orderQueue.isEmpty()) {
             List<OrderEntity> batch = new ArrayList<>(1000);
-            for (;;) {
+            for (; ; ) {
                 List<OrderEntity> orders = orderQueue.poll();
                 if (orders != null) {
                     batch.addAll(orders);
@@ -292,47 +289,60 @@ public class TradingEngineService extends LoggerSupport {
         }
     }
 
-    public void processMessages(List<AbstractEvent> messages) {
-        this.orderBookChanged = false;
-        for (AbstractEvent message : messages) {
-            processEvent(message);
-        }
-        if (this.orderBookChanged) {
+    private void markOrderBookAsUpdated() {
+        this.isOrderBookUpdated = true;
+    }
+
+    private void resetOrderBookUpdateStatus() {
+        this.isOrderBookUpdated = false;
+    }
+
+    private void updateOrderBookIfChanged() {
+        if (this.isOrderBookUpdated) {
             // 获取最新的OrderBook快照:
-            this.latestOrderBook = this.matchEngine.getOrderBook(this.orderBookDepth);
+            this.latestOrderBook = this.matchingService.getOrderBook(this.orderBookDepth);
+            this.isOrderBookUpdated = false;
         }
     }
 
-    public void processEvent(AbstractEvent event) {
+    public void processMessages(List<BaseEvent> messages) {
+        resetOrderBookUpdateStatus();
+        for (BaseEvent message : messages) {
+            processEvent(message);
+        }
+        updateOrderBookIfChanged();
+    }
+
+    public void processEvent(BaseEvent event) {
         if (this.fatalError) {
             return;
         }
-        if (event.sequenceId <= this.lastSequenceId) {
+        if (event.sequenceId <= this.lastEventSequenceId) {
             logger.warn("skip duplicate event: {}", event);
             return;
         }
-        if (event.previousId > this.lastSequenceId) {
-            logger.warn("event lost: expected previous id {} but actual {} for event {}", this.lastSequenceId,
+        if (event.previousId > this.lastEventSequenceId) {
+            logger.warn("event lost: expected previous id {} but actual {} for event {}", this.lastEventSequenceId,
                     event.previousId, event);
-            List<AbstractEvent> events = this.storeService.loadEventsFromDb(this.lastSequenceId);
+            List<BaseEvent> events = this.storeService.loadEventsFromDb(this.lastEventSequenceId);
             if (events.isEmpty()) {
                 logger.error("cannot load lost event from db.");
                 panic();
                 return;
             }
-            for (AbstractEvent e : events) {
+            for (BaseEvent e : events) {
                 this.processEvent(e);
             }
             return;
         }
-        if (event.previousId != lastSequenceId) {
-            logger.error("bad event: expected previous id {} but actual {} for event: {}", this.lastSequenceId,
+        if (event.previousId != lastEventSequenceId) {
+            logger.error("bad event: expected previous id {} but actual {} for event: {}", this.lastEventSequenceId,
                     event.previousId, event);
             panic();
             return;
         }
         if (logger.isDebugEnabled()) {
-            logger.debug("process event {} -> {}: {}...", this.lastSequenceId, event.sequenceId, event);
+            logger.debug("process event {} -> {}: {}...", this.lastEventSequenceId, event.sequenceId, event);
         }
         try {
             if (event instanceof OrderRequestEvent) {
@@ -352,9 +362,9 @@ public class TradingEngineService extends LoggerSupport {
             panic();
             return;
         }
-        this.lastSequenceId = event.sequenceId;
+        this.lastEventSequenceId = event.sequenceId;
         if (logger.isDebugEnabled()) {
-            logger.debug("set last processed sequence id: {}...", this.lastSequenceId);
+            logger.debug("set last processed sequence id: {}...", this.lastEventSequenceId);
         }
         if (debugMode) {
             this.validate();
@@ -368,10 +378,8 @@ public class TradingEngineService extends LoggerSupport {
         System.exit(1);
     }
 
-    boolean transfer(TransferEvent event) {
-        boolean ok = this.assetService.tryTransfer(Transfer.AVAILABLE_TO_AVAILABLE, event.fromUserId, event.toUserId,
-                event.asset, event.amount, event.sufficient);
-        return ok;
+    void transfer(TransferEvent event) {
+        this.assetService.transferAvailableToAvailable(event.fromUserId, event.toUserId, event.asset, event.amount, event.sufficient);
     }
 
     void createOrder(OrderRequestEvent event) {
@@ -387,47 +395,47 @@ public class TradingEngineService extends LoggerSupport {
             this.apiResultQueue.add(ApiResultMessage.createOrderFailed(event.refId, event.createdAt));
             return;
         }
-        MatchResult result = this.matchEngine.processOrder(event.sequenceId, order);
-        this.clearingService.clearMatchResult(result);
+        MatchingResult result = this.matchingService.processOrder(order);
+        this.clearingService.clearMatchingResult(result);
         // 推送成功结果,注意必须复制一份OrderEntity,因为将异步序列化:
         this.apiResultQueue.add(ApiResultMessage.orderSuccess(event.refId, order.copy(), event.createdAt));
-        this.orderBookChanged = true;
+        markOrderBookAsUpdated();
         // 收集Notification:
         List<NotificationMessage> notifications = new ArrayList<>();
         notifications.add(createNotification(event.createdAt, "order_matched", order.userId, order.copy()));
-        // 收集已完成的OrderEntity并生成MatchDetailEntity, TickEntity:
-        if (!result.matchDetails.isEmpty()) {
+        // 收集已完成的OrderEntity并生成MatchingDetailEntity, TickEntity:
+        if (!result.matchingDetails.isEmpty()) {
             List<OrderEntity> closedOrders = new ArrayList<>();
-            List<MatchDetailEntity> matchDetails = new ArrayList<>();
+            List<MatchingDetailEntity> matchingDetails = new ArrayList<>();
             List<TickEntity> ticks = new ArrayList<>();
             if (result.takerOrder.status.isFinalStatus) {
                 closedOrders.add(result.takerOrder);
             }
-            for (MatchDetailRecord detail : result.matchDetails) {
+            for (MatchingDetailRecord detail : result.matchingDetails) {
                 OrderEntity maker = detail.makerOrder();
                 notifications.add(createNotification(event.createdAt, "order_matched", maker.userId, maker.copy()));
                 if (maker.status.isFinalStatus) {
                     closedOrders.add(maker);
                 }
-                MatchDetailEntity takerDetail = generateMatchDetailEntity(event.sequenceId, event.createdAt, detail,
+                MatchingDetailEntity takerDetail = generateMatchingDetailEntity(event.sequenceId, event.createdAt, detail,
                         true);
-                MatchDetailEntity makerDetail = generateMatchDetailEntity(event.sequenceId, event.createdAt, detail,
+                MatchingDetailEntity makerDetail = generateMatchingDetailEntity(event.sequenceId, event.createdAt, detail,
                         false);
-                matchDetails.add(takerDetail);
-                matchDetails.add(makerDetail);
+                matchingDetails.add(takerDetail);
+                matchingDetails.add(makerDetail);
                 TickEntity tick = new TickEntity();
                 tick.sequenceId = event.sequenceId;
                 tick.takerOrderId = detail.takerOrder().id;
                 tick.makerOrderId = detail.makerOrder().id;
                 tick.price = detail.price();
                 tick.quantity = detail.quantity();
-                tick.takerDirection = detail.takerOrder().direction == Direction.BUY;
+                tick.takerDirection = detail.takerOrder().direction == OrderDirectionEnum.BID;
                 tick.createdAt = event.createdAt;
                 ticks.add(tick);
             }
             // 异步写入数据库:
             this.orderQueue.add(closedOrders);
-            this.matchQueue.add(matchDetails);
+            this.matchQueue.add(matchingDetails);
             // 异步发送Tick消息:
             TickMessage msg = new TickMessage();
             msg.sequenceId = event.sequenceId;
@@ -448,16 +456,16 @@ public class TradingEngineService extends LoggerSupport {
         return msg;
     }
 
-    MatchDetailEntity generateMatchDetailEntity(long sequenceId, long timestamp, MatchDetailRecord detail,
-            boolean forTaker) {
-        MatchDetailEntity d = new MatchDetailEntity();
+    MatchingDetailEntity generateMatchingDetailEntity(long sequenceId, long timestamp, MatchingDetailRecord detail,
+                                                      boolean forTaker) {
+        MatchingDetailEntity d = new MatchingDetailEntity();
         d.sequenceId = sequenceId;
         d.orderId = forTaker ? detail.takerOrder().id : detail.makerOrder().id;
         d.counterOrderId = forTaker ? detail.makerOrder().id : detail.takerOrder().id;
         d.direction = forTaker ? detail.takerOrder().direction : detail.makerOrder().direction;
         d.price = detail.price();
         d.quantity = detail.quantity();
-        d.type = forTaker ? MatchType.TAKER : MatchType.MAKER;
+        d.type = forTaker ? MatchTypeEnum.TAKER : MatchTypeEnum.MAKER;
         d.userId = forTaker ? detail.takerOrder().userId : detail.makerOrder().userId;
         d.counterUserId = forTaker ? detail.makerOrder().userId : detail.takerOrder().userId;
         d.createdAt = timestamp;
@@ -472,9 +480,9 @@ public class TradingEngineService extends LoggerSupport {
             this.apiResultQueue.add(ApiResultMessage.cancelOrderFailed(event.refId, event.createdAt));
             return;
         }
-        this.matchEngine.cancel(event.createdAt, order);
+        this.matchingService.cancel(event.createdAt, order);
         this.clearingService.clearCancelOrder(order);
-        this.orderBookChanged = true;
+        markOrderBookAsUpdated();
         // 发送成功消息:
         this.apiResultQueue.add(ApiResultMessage.orderSuccess(event.refId, order, event.createdAt));
         this.notificationQueue.add(createNotification(event.createdAt, "order_canceled", order.userId, order));
@@ -484,15 +492,15 @@ public class TradingEngineService extends LoggerSupport {
         System.out.println("========== trading engine ==========");
         this.assetService.debug();
         this.orderService.debug();
-        this.matchEngine.debug();
+        this.matchingService.debug();
         System.out.println("========== // trading engine ==========");
     }
 
-    void validate() {
+    public void validate() {
         logger.debug("start validate...");
         validateAssets();
-        validateOrders();
-        validateMatchEngine();
+        validateOrdersAndAsset();
+        validateMatchingAndOrder();
         logger.debug("validate ok.");
     }
 
@@ -500,13 +508,13 @@ public class TradingEngineService extends LoggerSupport {
         // 验证系统资产完整性:
         BigDecimal totalUSD = BigDecimal.ZERO;
         BigDecimal totalBTC = BigDecimal.ZERO;
-        for (Entry<Long, ConcurrentMap<AssetEnum, Asset>> userEntry : this.assetService.getUserAssets().entrySet()) {
-            Long userId = userEntry.getKey();
-            ConcurrentMap<AssetEnum, Asset> assets = userEntry.getValue();
+        for (Entry<Long, Map<AssetEnum, Asset>> userAssetEntry : this.assetService.getAllUserAssetsMap().entrySet()) {
+            Long userId = userAssetEntry.getKey();
+            Map<AssetEnum, Asset> assets = userAssetEntry.getValue();
             for (Entry<AssetEnum, Asset> entry : assets.entrySet()) {
                 AssetEnum assetId = entry.getKey();
                 Asset asset = entry.getValue();
-                if (userId.longValue() == UserType.DEBT.getInternalUserId()) {
+                if (userId.longValue() == UserTypeEnum.SYSTEM.getInternalUserId()) {
                     // 系统负债账户available不允许为正:
                     require(asset.getAvailable().signum() <= 0, "Debt has positive available: " + asset);
                     // 系统负债账户frozen必须为0:
@@ -517,13 +525,13 @@ public class TradingEngineService extends LoggerSupport {
                     require(asset.getFrozen().signum() >= 0, "Trader has negative frozen: " + asset);
                 }
                 switch (assetId) {
-                case USD -> {
-                    totalUSD = totalUSD.add(asset.getTotal());
-                }
-                case BTC -> {
-                    totalBTC = totalBTC.add(asset.getTotal());
-                }
-                default -> require(false, "Unexpected asset id: " + assetId);
+                    case USD -> {
+                        totalUSD = totalUSD.add(asset.getTotal());
+                    }
+                    case BTC -> {
+                        totalBTC = totalBTC.add(asset.getTotal());
+                    }
+                    default -> require(false, "Unexpected asset id: " + assetId);
                 }
             }
         }
@@ -532,40 +540,40 @@ public class TradingEngineService extends LoggerSupport {
         require(totalBTC.signum() == 0, "Non zero BTC balance: " + totalBTC);
     }
 
-    void validateOrders() {
+    void validateOrdersAndAsset() {
         // 验证订单:
         Map<Long, Map<AssetEnum, BigDecimal>> userOrderFrozen = new HashMap<>();
-        for (Entry<Long, OrderEntity> entry : this.orderService.getActiveOrders().entrySet()) {
+        for (Entry<Long, OrderEntity> entry : this.orderService.getAllActiveOrdersMap().entrySet()) {
             OrderEntity order = entry.getValue();
             require(order.unfilledQuantity.signum() > 0, "Active order must have positive unfilled amount: " + order);
             switch (order.direction) {
-            case BUY -> {
-                // 订单必须在MatchEngine中:
-                require(this.matchEngine.buyBook.exist(order), "order not found in buy book: " + order);
-                // 累计冻结的USD:
-                userOrderFrozen.putIfAbsent(order.userId, new HashMap<>());
-                Map<AssetEnum, BigDecimal> frozenAssets = userOrderFrozen.get(order.userId);
-                frozenAssets.putIfAbsent(AssetEnum.USD, BigDecimal.ZERO);
-                BigDecimal frozen = frozenAssets.get(AssetEnum.USD);
-                frozenAssets.put(AssetEnum.USD, frozen.add(order.price.multiply(order.unfilledQuantity)));
-            }
-            case SELL -> {
-                // 订单必须在MatchEngine中:
-                require(this.matchEngine.sellBook.exist(order), "order not found in sell book: " + order);
-                // 累计冻结的BTC:
-                userOrderFrozen.putIfAbsent(order.userId, new HashMap<>());
-                Map<AssetEnum, BigDecimal> frozenAssets = userOrderFrozen.get(order.userId);
-                frozenAssets.putIfAbsent(AssetEnum.BTC, BigDecimal.ZERO);
-                BigDecimal frozen = frozenAssets.get(AssetEnum.BTC);
-                frozenAssets.put(AssetEnum.BTC, frozen.add(order.unfilledQuantity));
-            }
-            default -> require(false, "Unexpected order direction: " + order.direction);
+                case BID -> {
+                    // 订单必须在MatchingService中:
+                    require(this.matchingService.bidBook.exist(order), "order not found in buy book: " + order);
+                    // 累计冻结的USD:
+                    userOrderFrozen.putIfAbsent(order.userId, new HashMap<>());
+                    Map<AssetEnum, BigDecimal> frozenAssets = userOrderFrozen.get(order.userId);
+                    frozenAssets.putIfAbsent(AssetEnum.USD, BigDecimal.ZERO);
+                    BigDecimal frozen = frozenAssets.get(AssetEnum.USD);
+                    frozenAssets.put(AssetEnum.USD, frozen.add(order.price.multiply(order.unfilledQuantity)));
+                }
+                case ASK -> {
+                    // 订单必须在MatchingService中:
+                    require(this.matchingService.askBook.exist(order), "order not found in sell book: " + order);
+                    // 累计冻结的BTC:
+                    userOrderFrozen.putIfAbsent(order.userId, new HashMap<>());
+                    Map<AssetEnum, BigDecimal> frozenAssets = userOrderFrozen.get(order.userId);
+                    frozenAssets.putIfAbsent(AssetEnum.BTC, BigDecimal.ZERO);
+                    BigDecimal frozen = frozenAssets.get(AssetEnum.BTC);
+                    frozenAssets.put(AssetEnum.BTC, frozen.add(order.unfilledQuantity));
+                }
+                default -> require(false, "Unexpected order direction: " + order.direction);
             }
         }
         // 订单冻结的累计金额必须和Asset冻结一致:
-        for (Entry<Long, ConcurrentMap<AssetEnum, Asset>> userEntry : this.assetService.getUserAssets().entrySet()) {
+        for (Entry<Long, Map<AssetEnum, Asset>> userEntry : this.assetService.getAllUserAssetsMap().entrySet()) {
             Long userId = userEntry.getKey();
-            ConcurrentMap<AssetEnum, Asset> assets = userEntry.getValue();
+            Map<AssetEnum, Asset> assets = userEntry.getValue();
             for (Entry<AssetEnum, Asset> entry : assets.entrySet()) {
                 AssetEnum assetId = entry.getKey();
                 Asset asset = entry.getValue();
@@ -589,18 +597,18 @@ public class TradingEngineService extends LoggerSupport {
         }
     }
 
-    void validateMatchEngine() {
+    void validateMatchingAndOrder() {
         // OrderBook的Order必须在ActiveOrders中:
-        Map<Long, OrderEntity> copyOfActiveOrders = new HashMap<>(this.orderService.getActiveOrders());
-        for (OrderEntity order : this.matchEngine.buyBook.book.values()) {
+        Map<Long, OrderEntity> copyOfActiveOrders = new HashMap<>(this.orderService.getAllActiveOrdersMap());
+        for (OrderEntity order : this.matchingService.bidBook.orderMap.values()) {
             require(copyOfActiveOrders.remove(order.id) == order,
                     "Order in buy book is not in active orders: " + order);
         }
-        for (OrderEntity order : this.matchEngine.sellBook.book.values()) {
+        for (OrderEntity order : this.matchingService.askBook.orderMap.values()) {
             require(copyOfActiveOrders.remove(order.id) == order,
                     "Order in sell book is not in active orders: " + order);
         }
-        // activeOrders的所有Order必须在Order Book中:
+        // orderService的所有Order必须在matchingService中:
         require(copyOfActiveOrders.isEmpty(), "Not all active orders are in order book.");
     }
 

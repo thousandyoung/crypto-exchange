@@ -7,11 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.message.base.BaseMessage;
 import com.howellyoung.exchange.util.JsonUtil;
 import jakarta.annotation.PostConstruct;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;

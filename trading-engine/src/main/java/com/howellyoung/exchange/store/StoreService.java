@@ -3,9 +3,9 @@ package com.howellyoung.exchange.store;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.howellyoung.exchange.entity.EventEntity;
-import com.howellyoung.exchange.entity.MatchingDetailEntity;
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.EventEntity;
+import com.howellyoung.exchange.entity.trade.MatchingDetailEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 import com.howellyoung.exchange.entity.base.BaseEntity;
 import com.howellyoung.exchange.message.event.BaseEvent;
 import com.howellyoung.exchange.messaging.MessageTypes;

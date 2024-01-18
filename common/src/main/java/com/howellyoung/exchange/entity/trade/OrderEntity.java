@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.entity;
+package com.howellyoung.exchange.entity.trade;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.howellyoung.exchange.enums.OrderDirectionEnum;

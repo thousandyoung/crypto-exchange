@@ -2,7 +2,7 @@ package com.howellyoung.exchange.messaging;
 
 import java.util.List;
 
-import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.message.base.BaseMessage;
 
 @FunctionalInterface
 public interface MessageProducer<T extends BaseMessage> {

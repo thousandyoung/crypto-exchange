@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.message;
+package com.howellyoung.exchange.message.base;
 
 public class BaseMessage {
     /**

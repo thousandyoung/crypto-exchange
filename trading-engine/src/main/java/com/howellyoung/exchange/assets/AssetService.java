@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class AssetService extends LoggerBase {
     private enum Transfer {
         AVAILABLE_TO_FROZEN,
+        AVAILABLE_TO_AVAILABLE,
         FROZEN_TO_AVAILABLE;
     }
     final ConcurrentMap<Long, ConcurrentMap<AssetEnum, Asset>> allUserAssetsMap = new ConcurrentHashMap<>();
@@ -64,6 +65,12 @@ public class AssetService extends LoggerBase {
         logTransfer(assetEnum, fromUser, toUser, amount);
     }
 
+    public void transferAvailableToAvailable(Long fromUser, Long toUser, AssetEnum assetEnum, BigDecimal amount, boolean checkBalance) {
+        if (!tryTransfer(Transfer.AVAILABLE_TO_AVAILABLE, fromUser, toUser, assetEnum, amount, checkBalance)) {
+            handleFailedTransfer(Transfer.AVAILABLE_TO_AVAILABLE, fromUser, toUser, assetEnum, amount);
+        }
+        logTransfer(assetEnum, fromUser, toUser, amount);
+    }
 
     private void handleFailedTransfer(Transfer type, Long fromUser, Long toUser, AssetEnum assetId, BigDecimal amount) {
         throw new RuntimeException("Transfer failed for " + type + ", from user " + fromUser + " to user " + toUser
@@ -96,6 +103,15 @@ public class AssetService extends LoggerBase {
                 }
                 fromAsset.available = fromAsset.available.subtract(amount);
                 toAsset.frozen = toAsset.frozen.add(amount);
+                yield true;
+            }
+            case AVAILABLE_TO_AVAILABLE -> {
+                // 需要检查余额且余额不足:
+                if (checkBalance && fromAsset.available.compareTo(amount) < 0) {
+                    yield false;
+                }
+                fromAsset.available = fromAsset.available.subtract(amount);
+                toAsset.available = toAsset.available.add(amount);
                 yield true;
             }
             case FROZEN_TO_AVAILABLE -> {

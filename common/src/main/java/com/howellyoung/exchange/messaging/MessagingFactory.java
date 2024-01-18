@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
-import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.message.base.BaseMessage;
 import com.howellyoung.exchange.util.LoggerBase;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;

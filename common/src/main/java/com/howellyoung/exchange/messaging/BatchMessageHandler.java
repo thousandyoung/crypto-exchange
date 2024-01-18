@@ -1,6 +1,6 @@
 package com.howellyoung.exchange.messaging;
 
-import com.howellyoung.exchange.message.BaseMessage;
+import com.howellyoung.exchange.message.base.BaseMessage;
 
 import java.util.List;
 

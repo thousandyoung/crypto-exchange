@@ -6,7 +6,7 @@ import com.howellyoung.exchange.assets.AssetService;
 import com.howellyoung.exchange.enums.AssetEnum;
 import com.howellyoung.exchange.matching.MatchingDetailRecord;
 import com.howellyoung.exchange.matching.MatchingResult;
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 import com.howellyoung.exchange.order.OrderService;
 import com.howellyoung.exchange.util.LoggerBase;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 
 import com.howellyoung.exchange.bean.OrderBookItemBean;
 import com.howellyoung.exchange.enums.OrderDirectionEnum;
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 
 
 import java.util.TreeMap;

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 
 
 import com.howellyoung.exchange.enums.AssetEnum;
-import com.howellyoung.exchange.entity.OrderEntity;
+import com.howellyoung.exchange.entity.trade.OrderEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

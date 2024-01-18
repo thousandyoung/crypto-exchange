@@ -1,6 +1,6 @@
 package com.howellyoung.exchange.repository;
 
-import com.howellyoung.exchange.entity.MatchingDetailEntity;
+import com.howellyoung.exchange.entity.trade.MatchingDetailEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.transaction.annotation.Transactional;
