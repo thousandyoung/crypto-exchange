@@ -4,6 +4,11 @@ exchange:
     order-book-depth: ${ORDER_BOOK_DEPTH:50}
     debug-mode: ${EXCHANGE_DEBUG_MODE:false}
     time-zone: ${EXCHANGE_TIME_ZONE:}
+    hmac-key: ${EXCHANGE_HMAC_KEY:ChangeThisHmacKey4ExchangeConfig}
+    session-timeout: ${EXCHANGE_SESSION_TIMEOUT:P3D}
+    api-endpoints:
+      trading-api: ${TRADING_API:http://localhost:8001}
+      trading-engine-api: ${TRADING_ENGINE_API:http://localhost:8002}
 
 spring:
   kafka:

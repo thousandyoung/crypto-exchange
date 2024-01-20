@@ -14,6 +14,7 @@ public class ExchangeConfiguration {
     private int orderBookDepth = 50;
     private boolean debugMode = false;
     private String timeZone = ZoneId.systemDefault().getId(); //默认设置
+    private ApiEndpoints apiEndpoints;
 
     @Bean
     public ZoneId createZoneId() {
@@ -42,6 +43,34 @@ public class ExchangeConfiguration {
 
     public void setTimeZone(String timeZone) {
         this.timeZone = timeZone.isEmpty() ? ZoneId.systemDefault().getId() : timeZone;
+    }
+    public ApiEndpoints getApiEndpoints() {
+        return apiEndpoints;
+    }
+
+    public void setApiEndpoints(ApiEndpoints apiEndpoints) {
+        this.apiEndpoints = apiEndpoints;
+    }
+
+    public static class ApiEndpoints {
+        private String tradingApi;
+        private String tradingEngineApi;
+
+        public String getTradingApi() {
+            return tradingApi;
+        }
+
+        public void setTradingApi(String tradingApi) {
+            this.tradingApi = tradingApi;
+        }
+
+        public String getTradingEngineApi() {
+            return tradingEngineApi;
+        }
+
+        public void setTradingEngineApi(String tradingEngineApi) {
+            this.tradingEngineApi = tradingEngineApi;
+        }
     }
 
 }

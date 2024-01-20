@@ -7,6 +7,7 @@
     <file url="file://$PROJECT_DIR$/common/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/trading-api/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/trading-engine/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/trading-sequencer/src/main/java" charset="UTF-8" />
   </component>
