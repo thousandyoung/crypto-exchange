@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.repository;
+package com.howellyoung.exchange.repository.trade;
 
 import com.howellyoung.exchange.entity.trade.EventEntity;
 import org.springframework.data.domain.Pageable;

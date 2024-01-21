@@ -2,7 +2,7 @@ package com.howellyoung.exchange.message;
 
 import java.util.List;
 
-import com.howellyoung.exchange.entity.TickEntity;
+import com.howellyoung.exchange.entity.quotation.TickEntity;
 import com.howellyoung.exchange.message.base.BaseMessage;
 
 

@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.entity;
+package com.howellyoung.exchange.entity.quotation;
 
 import java.math.BigDecimal;
 
@@ -20,10 +20,10 @@ public class TickEntity implements BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false)
-    public long id;
+    public Long id;
 
     @Column(nullable = false, updatable = false)
-    public long sequenceId;
+    public Long sequenceId;
 
     @Column(nullable = false, updatable = false)
     public Long takerOrderId;
@@ -47,7 +47,7 @@ public class TickEntity implements BaseEntity {
      * Created time (milliseconds).
      */
     @Column(nullable = false, updatable = false)
-    public long createdAt;
+    public Long createdAt;
 
     public String toJson() {
         return "[" + createdAt + "," + (takerDirection ? 1 : 0) + "," + price + "," + quantity + "]";

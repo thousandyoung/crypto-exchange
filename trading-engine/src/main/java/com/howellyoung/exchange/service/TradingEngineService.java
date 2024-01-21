@@ -4,7 +4,7 @@ import com.howellyoung.exchange.assets.Asset;
 import com.howellyoung.exchange.assets.AssetService;
 import com.howellyoung.exchange.bean.OrderBookBean;
 import com.howellyoung.exchange.clearing.ClearingService;
-import com.howellyoung.exchange.entity.TickEntity;
+import com.howellyoung.exchange.entity.quotation.TickEntity;
 import com.howellyoung.exchange.entity.trade.MatchingDetailEntity;
 import com.howellyoung.exchange.entity.trade.OrderEntity;
 import com.howellyoung.exchange.enums.AssetEnum;
@@ -34,7 +34,6 @@ import com.howellyoung.exchange.util.JsonUtil;
 import com.howellyoung.exchange.util.LoggerBase;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

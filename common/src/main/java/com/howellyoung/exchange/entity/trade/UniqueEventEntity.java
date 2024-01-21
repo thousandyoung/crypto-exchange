@@ -1,4 +1,4 @@
-package com.howellyoung.exchange.entity;
+package com.howellyoung.exchange.entity.trade;
 
 import com.howellyoung.exchange.entity.base.BaseEntity;
 import jakarta.persistence.Column;

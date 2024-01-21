@@ -16,6 +16,7 @@
         <module>cloud</module>
         <module>trading-sequencer</module>
         <module>trading-api</module>
+        <module>quotation</module>
     </modules>
 
     <parent>

@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 import com.howellyoung.exchange.bean.SimpleMatchingDetailRecord;
 import com.howellyoung.exchange.entity.trade.MatchingDetailEntity;
 import com.howellyoung.exchange.entity.trade.OrderEntity;
-import com.howellyoung.exchange.repository.MatchingDetailRepository;
-import com.howellyoung.exchange.repository.OrderRepository;
+import com.howellyoung.exchange.repository.trade.MatchingDetailRepository;
+import com.howellyoung.exchange.repository.trade.OrderRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 

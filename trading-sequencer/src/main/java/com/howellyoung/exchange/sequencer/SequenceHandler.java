@@ -4,11 +4,11 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.howellyoung.exchange.entity.trade.EventEntity;
-import com.howellyoung.exchange.entity.UniqueEventEntity;
+import com.howellyoung.exchange.entity.trade.UniqueEventEntity;
 import com.howellyoung.exchange.message.event.BaseEvent;
 import com.howellyoung.exchange.messaging.MessageTypes;
-import com.howellyoung.exchange.repository.EventRepository;
-import com.howellyoung.exchange.repository.UniqueEventRepository;
+import com.howellyoung.exchange.repository.trade.EventRepository;
+import com.howellyoung.exchange.repository.trade.UniqueEventRepository;
 import com.howellyoung.exchange.util.LoggerBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
